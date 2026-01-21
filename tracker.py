@@ -4,6 +4,7 @@ import random
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 import logging
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -20,6 +21,35 @@ class StockTracker:
         self.ua = UserAgent()
         self.proxies = self._load_proxies(proxies_file)
         self.session = requests.Session()
+
+    def send_notification(self, subject, body):
+        webhook_url = os.environ.get('NOTIFICATION_URL')
+        
+        if not webhook_url:
+            return
+
+        try:
+            # Check if it's a known service format or generic
+            if "ntfy.sh" in webhook_url:
+                requests.post(webhook_url,
+                    data=body.encode(encoding='utf-8'),
+                    headers={
+                        "Title": subject,
+                        "Priority": "high",
+                        "Tags": "tada"
+                    })
+            else:
+                 # Generic Webhook (Discord, Slack, IFTTT)
+                 # Most expect JSON
+                 payload = {"content": f"**{subject}**\n{body}"} # Discordish format
+                 if "maker.ifttt.com" in webhook_url:
+                      payload = {"value1": subject, "value2": body}
+                 
+                 requests.post(webhook_url, json=payload)
+                 
+            logging.info(f"Notification sent to webhook")
+        except Exception as e:
+            logging.error(f"Failed to send notification: {e}")
 
     def _load_proxies(self, filepath):
         proxies = []
@@ -179,8 +209,17 @@ class StockTracker:
 
         if in_stock_items:
             print("\nThe following products are in stock:")
+            msg_lines = []
             for item in in_stock_items:
-                print(f"- {item['name']} (Total: {item['count']})")
+                line = f"- {item['name']} (Total: {item['count']})"
+                print(line)
+                msg_lines.append(line)
+            
+            # Send notification
+            if in_stock_items:
+                body = "Stock found for the following items:\n\n" + "\n".join(msg_lines)
+                body += f"\n\nZip Code: {targets[0]['zipcode']}"
+                self.send_notification("Pokemon Stock Alert!", body)
         else:
             print("\nNone of the products are in stock within 10 miles.")
 
