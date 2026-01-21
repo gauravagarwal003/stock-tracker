@@ -1,0 +1,4 @@
+# Add proxies here in the format: protocol://user:pass@ip:port or protocol://ip:port
+# Example:
+# http://10.10.1.10:3128
+# https://user:pass@10.10.1.10:3128

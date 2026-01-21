@@ -1,0 +1,28 @@
+name: Stock Tracker
+
+on:
+  schedule:
+    # Runs at 08:00 UTC (Midnight PST) and 20:00 UTC (Noon PST)
+    # Note: PST is UTC-8, PDT is UTC-7. This schedule is for Standard Time.
+    - cron: '0 8,20 * * *'
+  workflow_dispatch: # Allows you to run it manually from the Actions tab
+
+jobs:
+  check-stock:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        
+    - name: Run Stock Tracker
+      run: python tracker.py
